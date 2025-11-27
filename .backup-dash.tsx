@@ -1,0 +1,149 @@
+'use client';
+'use client';
+import { useEffect, useState } from 'react';
+import api from '@/lib/api';
+import SummaryCard from '@/components/SummaryCard';
+import MonthlyBarChart from '@/components/MonthlyBarChart';
+import TransactionModal from '@/components/TransactionModal';
+import ExportControls from '@/components/ExportControls';
+import MemberBalances from '@/components/MemberBalances';
+import { Wallet, TrendingDown, PiggyBank } from 'lucide-react';
+import { useLanguage } from '@/context/LanguageContext';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+
+interface MonthlyData {
+    month: string;
+    year: number;
+    monthNum: number;
+    total: number;
+}
+
+export default function Dashboard() {
+    const [data, setData] = useState<any>(null);
+    const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+    const [balanceData, setBalanceData] = useState<any>(null);
+    const [selectedMonthTransactions, setSelectedMonthTransactions] = useState<any[]>([]);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalTitle, setModalTitle] = useState('');
+    const [loadingData, setLoadingData] = useState(true);
+    const { t } = useLanguage();
+    const { isAuthenticated, loading: authLoading, user } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!isAuthenticated) {
+            router.push('/login');
+            return;
+        }
+
+        fetchData();
+        fetchMonthlyData();
+        fetchBalances();
+    }, [isAuthenticated, authLoading, router]);
+
+    const fetchData = async () => {
+        try {
+            const res = await api.get('/dashboard');
+            setData(res.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    const fetchMonthlyData = async () => {
+        try {
+            const res = await api.get('/dashboard/monthly');
+            setMonthlyData(res.data);
+        } catch (err) {
+            console.error('Error fetching monthly data:', err);
+        }
+    };
+
+    const fetchBalances = async () => {
+        try {
+            const res = await api.get('/balances');
+            setBalanceData(res.data);
+        } catch (err) {
+            console.error('Error fetching balances:', err);
+        }
+    };
+
+    const handleBarClick = async (monthData: MonthlyData) => {
+        try {
+            const res = await api.get('/transactions/by-period', {
+                params: {
+                    type: 'month',
+                    month: monthData.monthNum,
+                    year: monthData.year
+                }
+            });
+            setSelectedMonthTransactions(res.data);
+            setModalTitle(`${monthData.month} ${monthData.year} - Transactions`);
+            setModalOpen(true);
+        } catch (err) {
+            console.error('Error fetching month transactions:', err);
+        }
+    };
+
+    if (authLoading || loadingData) return <div className="p-8 text-center text-blue-600">{t('common.loading')}</div>;
+
+    return (
+        <div className="space-y-8">
+            <header>
+                <h1 className="text-3xl font-bold text-blue-700">{t('dashboard.title')}</h1>
+                <p className="text-blue-600">{t('dashboard.welcome')}</p>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <SummaryCard
+                    title={t('dashboard.totalExpenses')}
+                    amount={data?.totalBalance || 0}
+                    icon={TrendingDown}
+                    color="bg-red-500"
+                />
+                <SummaryCard
+                    title={t('dashboard.savingsGoal')}
+                    amount={0}
+                    icon={PiggyBank}
+                    color="bg-green-500"
+                />
+                <SummaryCard
+                    title="Total Balance"
+                    amount={balanceData?.totalBalance || 0}
+                    icon={Wallet}
+                    color="bg-blue-500"
+                />
+            </div>
+
+            {/* Member Balances */}
+            {balanceData && (
+                <MemberBalances
+                    balances={balanceData.balances}
+                    onBalanceUpdate={fetchBalances}
+                />
+            )}
+
+            {/* Monthly Bar Chart */}
+            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-blue-100">
+                <h2 className="text-xl font-bold text-blue-700 mb-6">Monthly Expense Overview</h2>
+                <p className="text-sm text-blue-600 mb-4">Click on any bar to view detailed transactions for that month</p>
+                <MonthlyBarChart data={monthlyData} onBarClick={handleBarClick} />
+            </div>
+
+            {/* Export Controls */}
+            <ExportControls familyName={user?.name || 'Family'} />
+
+            {/* Transaction Modal */}
+            <TransactionModal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                transactions={selectedMonthTransactions}
+                title={modalTitle}
+            />
+        </div>
+    );
+}
