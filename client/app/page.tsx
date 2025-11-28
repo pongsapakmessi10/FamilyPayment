@@ -133,6 +133,10 @@ export default function LandingPage() {
                 <p className="text-gray-600">ตั้งเป้าหมายครอบครัวและทำให้ฝันเป็นจริง</p>
               </div>
             </div>
+
+            <div className="pt-10 text-center text-sm text-gray-500">
+              พัฒนาโดย <span className='text-xl ml-2.5 font-bold text-brown-800'>Pongsapak Jongsomsuk</span>
+            </div>
           </div>
         </div>
       </div>
