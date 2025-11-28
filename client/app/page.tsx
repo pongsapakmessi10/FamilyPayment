@@ -95,7 +95,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 py-16">
           <div className="text-center space-y-8">
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900">
-              ยินดีต้อนรับสู่ <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Family Bank</span>
+              ยินดีต้อนรับสู่ <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Family Banks</span>
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               จัดการการเงินของครอบครัวร่วมกัน ติดตามค่าใช้จ่าย จัดการหนี้สิน และบรรลุเป้าหมายไปด้วยกัน
