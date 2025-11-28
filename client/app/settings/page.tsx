@@ -145,18 +145,21 @@ export default function SettingsPage() {
                         <h2 className="text-lg font-semibold text-blue-700 mb-4">{t('settings.members')}</h2>
                         <div className="space-y-4">
                             {family.members.map((member: any) => (
-                                <div key={member._id} className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100 hover:shadow-md transition-shadow">
-                                    <div className="flex items-center space-x-3">
+                                <div
+                                    key={member._id}
+                                    className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between p-4 bg-blue-50 rounded-xl border border-blue-100 hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-center gap-3">
                                         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg">
                                             {member.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div>
                                             <p className="font-semibold text-gray-900">{member.name}</p>
-                                            <p className="text-sm text-brown-600">{member.email}</p>
+                                            <p className="text-sm text-brown-600 truncate">{member.email}</p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center gap-2 justify-end md:justify-start">
                                         {member._id !== user?.id ? (
                                             <button
                                                 onClick={() => handleChangeRole(member._id, member.role, member.name)}

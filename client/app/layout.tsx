@@ -1,5 +1,5 @@
 'use client';
-import { Inter } from "next/font/google";
+import { Kanit } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
@@ -9,7 +9,11 @@ import { useAuth } from "@/context/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-const inter = Inter({ subsets: ["latin"] });
+const kanit = Kanit({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, loading } = useAuth();
@@ -56,8 +60,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <>
       {showNavigation && <Sidebar />}
-      <main className={showNavigation ? "md:pl-64 pb-20 md:pb-0 min-h-screen" : "min-h-screen"}>
-        <div className={showNavigation ? "max-w-7xl mx-auto p-4 md:p-8" : ""}>
+      <main className={showNavigation ? "md:pl-64 pb-24 md:pb-6 min-h-screen" : "min-h-screen pb-24 md:pb-6"}>
+        <div className={showNavigation ? "page-shell max-w-5xl mx-auto p-4 md:p-8" : "page-shell max-w-4xl mx-auto p-4 md:p-8"}>
           {children}
         </div>
       </main>
@@ -73,7 +77,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gradient-to-br from-blue-50 via-white to-blue-100 text-gray-900`}>
+      <body className={`${kanit.className} bg-gradient-to-br from-blue-50 via-white to-blue-100 text-gray-900`}>
         <LanguageProvider>
           <AuthProvider>
             <LayoutContent>{children}</LayoutContent>

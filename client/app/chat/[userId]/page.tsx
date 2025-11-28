@@ -263,33 +263,31 @@ export default function DMChatPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-brown-50 to-orange-50">
-            <div className="max-w-4xl mx-auto p-4">
+        <div className="min-h-screen bg-gradient-to-b from-brown-50 to-orange-50">
+            <div className="mx-auto h-screen max-w-3xl flex flex-col md:p-4">
                 {/* Header */}
-                <div className="bg-white rounded-t-2xl shadow-sm p-4 border-b border-brown-100">
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => router.push('/chat')}
-                            className="p-2 hover:bg-brown-50 rounded-lg transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-brown-600" />
-                        </button>
-                        {otherUser && (
-                            <>
-                                <div className="w-10 h-10 bg-gradient-to-br from-brown-500 to-brown-600 rounded-full flex items-center justify-center text-white font-bold">
-                                    {otherUser.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                    <h2 className="font-semibold text-gray-900">{otherUser.name}</h2>
-                                    <p className="text-sm text-gray-500">{otherUser.email}</p>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                <div className="sticky top-0 z-20 bg-white/90 backdrop-blur rounded-b-2xl shadow-sm px-3 py-3 md:px-4 md:py-4 border-b border-brown-100 flex items-center gap-3">
+                    <button
+                        onClick={() => router.push('/chat')}
+                        className="p-2 hover:bg-brown-50 rounded-lg transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-brown-600" />
+                    </button>
+                    {otherUser && (
+                        <>
+                            <div className="w-10 h-10 bg-gradient-to-br from-brown-500 to-brown-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                {otherUser.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="truncate">
+                                <h2 className="font-semibold text-gray-900 truncate">{otherUser.name}</h2>
+                                <p className="text-xs md:text-sm text-gray-500 truncate">{otherUser.email}</p>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Messages */}
-                <div className="bg-white shadow-sm min-h-[calc(100vh-280px)] max-h-[calc(100vh-280px)] overflow-y-auto p-6 space-y-4">
+                <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 space-y-4 bg-white/80 backdrop-blur rounded-2xl border border-brown-100 shadow-sm">
                     {loadingMessages ? (
                         <div className="flex justify-center items-center h-full">
                             <div className="text-brown-600">Loading messages...</div>
@@ -302,25 +300,25 @@ export default function DMChatPage() {
 
                                 return (
                                     <div key={msg._id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-xs lg:max-w-md ${isOwn ? 'order-2' : 'order-1'}`}>
+                                        <div className={`max-w-[82%] md:max-w-md ${isOwn ? 'order-2' : 'order-1'}`}>
                                             {!isOwn && (
-                                                <p className="text-xs text-gray-500 mb-1 px-2">{msg.sender.name}</p>
+                                                <p className="text-xs text-gray-500 mb-1 px-2 truncate">{msg.sender.name}</p>
                                             )}
                                             <div className="relative group">
-                                                <div className={`rounded-2xl p-3 ${msg.deletedForEveryone
-                                                        ? 'bg-gray-100 border border-gray-300 italic'
-                                                        : isOwn
-                                                            ? 'bg-brown-600 text-white rounded-br-none'
-                                                            : 'bg-white border border-brown-200 rounded-bl-none'
+                                                <div className={`rounded-2xl p-3 md:p-4 ${msg.deletedForEveryone
+                                                    ? 'bg-gray-100 border border-gray-300 italic'
+                                                    : isOwn
+                                                        ? 'bg-brown-600 text-white rounded-br-none'
+                                                        : 'bg-white border border-brown-200 rounded-bl-none'
                                                     }`}>
-                                                    <p className={`text-sm break-words ${msg.deletedForEveryone ? 'text-gray-500' : ''}`}>
+                                                    <p className={`text-sm leading-relaxed break-words ${msg.deletedForEveryone ? 'text-gray-500' : ''}`}>
                                                         {msg.deletedForEveryone ? '🚫 Message deleted' : msg.message}
                                                     </p>
-                                                    <p className={`text-xs mt-1 ${isOwn ? 'text-brown-100' : 'text-gray-400'}`}>
+                                                    <p className={`text-[11px] mt-1 ${isOwn ? 'text-brown-100' : 'text-gray-400'}`}>
                                                         {formatTime(msg.timestamp)}
                                                     </p>
                                                     {readStatus && (
-                                                        <p className="text-xs mt-1 text-brown-100 flex items-center gap-1">
+                                                        <p className="text-[11px] mt-1 text-brown-100 flex items-center gap-1">
                                                             <CheckCheck className="w-3 h-3" />
                                                             {readStatus}
                                                         </p>
@@ -374,26 +372,26 @@ export default function DMChatPage() {
                 </div>
 
                 {/* Message input */}
-                <div className="bg-white rounded-b-2xl shadow-sm p-4 border-t border-brown-100">
+                <div className="sticky bottom-0 bg-white/95 backdrop-blur rounded-t-2xl shadow-sm px-3 py-3 md:px-4 md:py-4 border-t border-brown-100">
                     <form onSubmit={sendMessage} className="flex gap-2">
                         <input
                             type="text"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder="Type a message..."
-                            className="flex-1 px-4 py-3 border border-brown-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brown-500 focus:border-transparent"
+                            className="flex-1 px-3 md:px-4 py-3 border border-brown-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brown-500 focus:border-transparent text-sm md:text-base"
                             disabled={sending}
                         />
                         <button
                             type="submit"
                             disabled={sending || !newMessage.trim()}
-                            className="px-6 py-3 bg-gradient-to-r from-brown-600 to-brown-700 text-white rounded-xl hover:from-brown-700 hover:to-brown-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                            className="px-4 md:px-6 py-3 bg-gradient-to-r from-brown-600 to-brown-700 text-white rounded-xl hover:from-brown-700 hover:to-brown-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg flex items-center gap-2 text-sm md:text-base"
                         >
                             {sending ? (
                                 <>Loading...</>
                             ) : (
                                 <>
-                                    <Send className="w-5 h-5" />
+                                    <Send className="w-4 h-4 md:w-5 md:h-5" />
                                     Send
                                 </>
                             )}

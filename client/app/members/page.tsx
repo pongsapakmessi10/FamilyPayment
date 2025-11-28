@@ -48,48 +48,54 @@ export default function AllMembersPage() {
     }
 
     return (
-        <div className="space-y-8">
-            <header>
-                <h1 className="text-3xl font-bold text-blue-700">สมาชิกทั้งหมด</h1>
-                <p className="text-blue-600">{familyName} • {members.length} {members.length === 1 ? 'สมาชิก' : 'สมาชิก'}</p>
+        <div className="space-y-4 md:space-y-8">
+            <header className="bg-white/90 backdrop-blur card-mobile px-4 py-4 md:px-6 md:py-5 rounded-2xl shadow-sm border border-blue-100 flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-blue-700">สมาชิกทั้งหมด</h1>
+                    <p className="text-blue-600 text-sm md:text-base">
+                        {familyName} • {members.length} {members.length === 1 ? 'สมาชิก' : 'สมาชิก'}
+                    </p>
+                </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {members.map((member) => (
                     <div
                         key={member._id}
-                        className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-blue-100 hover:shadow-xl transition-shadow"
+                        className="card-mobile bg-white/90 backdrop-blur-sm p-4 md:p-6 rounded-2xl shadow-lg border border-blue-100 hover:shadow-xl transition-shadow"
                     >
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-xl">
-                                {member.name.charAt(0).toUpperCase()}
+                        <div className="flex items-start justify-between mb-3 md:mb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg md:text-xl">
+                                    {member.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <h3 className="text-lg md:text-xl font-bold text-gray-900">{member.name}</h3>
+                                    <div className="flex items-center gap-2 text-sm text-brown-600">
+                                        <Mail className="w-4 h-4" />
+                                        <span className="truncate">{member.email}</span>
+                                    </div>
+                                </div>
                             </div>
                             <span
-                                className={`px-3 py-1 rounded-full text-xs font-medium ${member.role === 'moderator'
-                                    ? 'bg-purple-100 text-purple-600'
-                                    : 'bg-blue-100 text-blue-600'
-                                    }`}
+                                className={`px-3 py-1 rounded-full text-[11px] md:text-xs font-semibold flex items-center gap-1 ${
+                                    member.role === 'moderator'
+                                        ? 'bg-blue-200 text-blue-800'
+                                        : 'bg-brown-100 text-blue-700'
+                                }`}
                             >
                                 {member.role === 'moderator' ? (
-                                    <div className="flex items-center gap-1">
+                                    <>
                                         <Shield className="w-3 h-3" />
-                                        ผู้ดูแล
-                                    </div>
+                                        ผู้ดูแล{user?.id === member._id ? ' (คุณ)' : ''}
+                                    </>
                                 ) : (
-                                    <div className="flex items-center gap-1">
+                                    <>
                                         <User className="w-3 h-3" />
                                         สมาชิก
-                                    </div>
+                                    </>
                                 )}
                             </span>
-                        </div>
-
-                        <div className="space-y-2">
-                            <h3 className="text-lg font-bold text-blue-700">{member.name}</h3>
-                            <div className="flex items-center gap-2 text-sm text-blue-600">
-                                <Mail className="w-4 h-4" />
-                                <span className="truncate">{member.email}</span>
-                            </div>
                         </div>
                     </div>
                 ))}

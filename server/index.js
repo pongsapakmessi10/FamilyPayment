@@ -14,9 +14,15 @@ const eventBudgetRoutes = require('./routes/eventBudgets');
 
 const app = express();
 const server = http.createServer(app);
+// Allow multiple frontend origins for Socket.IO (env comma-separated)
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || "http://localhost:3000")
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
+
 const io = new Server(server, {
     cors: {
-        origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+        origin: allowedOrigins,
         methods: ["GET", "POST"],
         credentials: true
     }

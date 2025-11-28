@@ -90,8 +90,8 @@ export default function BottomNav() {
     return (
         <>
             {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gradient-to-r from-brown-600 to-brown-700 shadow-lg z-40">
-                <div className="flex items-center justify-around px-2 py-3">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gradient-to-r from-brown-600 to-brown-700 shadow-xl z-40 border-t border-white/10 backdrop-blur">
+                <div className="flex items-center justify-around px-2 py-3 max-w-md mx-auto">
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = pathname === item.href;
