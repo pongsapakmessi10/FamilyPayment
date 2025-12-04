@@ -45,14 +45,24 @@ const buildBillDetailsHtml = (bill, dueDate) => {
 
 // Create transporter for Gmail (using app password)
 const createTransporter = () => {
+    const { EMAIL_USER, EMAIL_PASSWORD } = process.env;
+
+    if (!EMAIL_USER || !EMAIL_PASSWORD) {
+        // Guard against missing credentials to avoid silent failures
+        throw new Error('Email credentials are not configured (EMAIL_USER / EMAIL_PASSWORD)');
+    }
+
     return nodemailer.createTransport({
         host: 'smtp.gmail.com',
+        // Port 587 with STARTTLS is more reliable on many hosts (465 can time out)
         port: 587,
-        secure: true,
+        secure: false,
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-        }
+            user: EMAIL_USER,
+            pass: EMAIL_PASSWORD
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000
     });
 };
 
