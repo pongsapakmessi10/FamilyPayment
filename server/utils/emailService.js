@@ -43,24 +43,19 @@ const buildBillDetailsHtml = (bill, dueDate) => {
     `;
 };
 
-// Create transporter for Gmail (using app password)
+// Create transporter for Brevo SMTP
 const createTransporter = () => {
-    const { EMAIL_USER, EMAIL_PASSWORD } = process.env;
+    const { BREVO_KEY, EMAIL_USER } = process.env;
 
-    if (!EMAIL_USER || !EMAIL_PASSWORD) {
-        // Guard against missing credentials to avoid silent failures
-        throw new Error('Email credentials are not configured (EMAIL_USER / EMAIL_PASSWORD)');
+    if (!BREVO_KEY) {
+        throw new Error('Email credentials are not configured (BREVO_KEY)');
     }
 
     return nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        // Port 587 with STARTTLS is more reliable on many hosts (465 can time out)
+        host: 'smtp-relay.brevo.com',
         port: 587,
         secure: false,
-        auth: {
-            user: EMAIL_USER,
-            pass: EMAIL_PASSWORD
-        },
+        auth: { user: 'apikey', pass: BREVO_KEY },
         connectionTimeout: 10000,
         greetingTimeout: 10000
     });
