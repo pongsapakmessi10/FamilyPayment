@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { socket } from '@/lib/socket';
 import TransactionList from '@/components/TransactionList';
@@ -8,13 +8,15 @@ import { useLanguage } from '@/context/LanguageContext';
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useNotifications } from '@/context/NotificationContext';
 
 export default function ExpensesPage() {
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const { t } = useLanguage();
-    const { isAuthenticated, loading: authLoading } = useAuth();
+    const { isAuthenticated, loading: authLoading, user } = useAuth();
+    const { markAsRead } = useNotifications();
     const router = useRouter();
 
     const [formData, setFormData] = useState({
@@ -26,28 +28,7 @@ export default function ExpensesPage() {
     });
     const [users, setUsers] = useState([]);
 
-    useEffect(() => {
-        if (authLoading) return;
-        if (!isAuthenticated) {
-            router.push('/');
-            return;
-        }
-
-        fetchTransactions();
-        fetchUsers();
-
-        socket.on('new-transaction', (newTx) => {
-            if (newTx.type === 'expense') {
-                setTransactions((prev: any) => [newTx, ...prev]);
-            }
-        });
-
-        return () => {
-            socket.off('new-transaction');
-        };
-    }, [isAuthenticated, authLoading]);
-
-    const fetchTransactions = async () => {
+    const fetchTransactions = useCallback(async () => {
         try {
             const res = await api.get('/transactions');
             setTransactions(res.data.filter((t: any) => t.type === 'expense'));
@@ -56,9 +37,9 @@ export default function ExpensesPage() {
         } finally {
             setLoadingData(false);
         }
-    };
+    }, []);
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         try {
             const res = await api.get('/users');
             setUsers(res.data);
@@ -68,7 +49,45 @@ export default function ExpensesPage() {
         } catch (err) {
             console.error(err);
         }
-    }
+    }, []);
+
+    useEffect(() => {
+        if (authLoading) return;
+        if (!isAuthenticated) {
+            router.push('/');
+            return;
+        }
+
+        fetchTransactions();
+        markAsRead('expenses');
+        fetchUsers();
+
+        const handleNewTransaction = (newTx: any) => {
+            if (newTx.type === 'expense') {
+                // Check if transaction already exists to prevent duplicates
+                setTransactions((prev: any) => {
+                    if (prev.some((t: any) => t._id === newTx._id)) {
+                        return prev;
+                    }
+
+                    // Filter out own transactions if they were already added manually
+                    // Now that payer is populated, we need to check _id
+                    const payerId = newTx.payer?._id || newTx.payer;
+                    if (user && payerId && (payerId === user.id || payerId.toString() === user.id)) {
+                        return prev;
+                    }
+
+                    return [newTx, ...prev];
+                });
+            }
+        };
+
+        socket.on('new-transaction', handleNewTransaction);
+
+        return () => {
+            socket.off('new-transaction', handleNewTransaction);
+        };
+    }, [isAuthenticated, authLoading, markAsRead, user, fetchTransactions, fetchUsers]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,10 +96,14 @@ export default function ExpensesPage() {
             return;
         }
         try {
-            await api.post('/transactions', {
+            const res = await api.post('/transactions', {
                 ...formData,
                 amount: Number(formData.amount)
             });
+
+            // Add new transaction to list immediately
+            setTransactions(prev => [res.data, ...prev]);
+
             setShowForm(false);
             setFormData(prev => ({ ...prev, description: '', amount: '' }));
         } catch (err) {

@@ -16,6 +16,12 @@ export default function DebtsPage() {
     const [showForm, setShowForm] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [insufficientModal, setInsufficientModal] = useState<{
+        show: boolean;
+        lenderName: string;
+        amount: number;
+        balance: number;
+    }>({ show: false, lenderName: '', amount: 0, balance: 0 });
     const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const [selectedDebt, setSelectedDebt] = useState<any | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -37,6 +43,8 @@ export default function DebtsPage() {
             router.push('/');
             return;
         }
+
+        // Mark expenses notifications as read when visiting debts? No action here.
 
         fetchData();
 
@@ -106,10 +114,27 @@ export default function DebtsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const amountNumber = parseFloat(formData.amount);
+            if (isNaN(amountNumber) || amountNumber <= 0) {
+                alert('กรุณาระบุจำนวนเงินที่ถูกต้องและมากกว่า 0');
+                return;
+            }
+
+            const lenderBalance = balances?.balances.find((b: any) => b._id === formData.lenderId);
+            if (lenderBalance && amountNumber > (lenderBalance.balance || 0)) {
+                setInsufficientModal({
+                    show: true,
+                    lenderName: lenderBalance.name || 'ผู้ให้ยืม',
+                    amount: amountNumber,
+                    balance: lenderBalance.balance || 0
+                });
+                return;
+            }
+
             await api.post('/borrow-request', {
                 lenderId: formData.lenderId,
                 description: formData.description,
-                amount: parseFloat(formData.amount)
+                amount: amountNumber
             });
 
             setFormData({ amount: '', lenderId: '', description: '' });
@@ -629,6 +654,30 @@ export default function DebtsPage() {
                                 className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
                             >
                                 ยกเลิก
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Insufficient balance modal */}
+            {insufficientModal.show && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setInsufficientModal({ ...insufficientModal, show: false })}>
+                    <div className="bg-white p-6 rounded-2xl shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-xl font-bold text-gray-800 mb-3">ไม่สามารถสร้างคำขอได้</h3>
+                        <p className="text-gray-700">
+                            จำนวนเงินของ {insufficientModal.lenderName} ไม่พอให้ยืม
+                        </p>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-3 text-sm text-gray-700 space-y-1">
+                            <p>ยอดที่ขอ: <span className="font-semibold text-gray-900">฿{insufficientModal.amount.toLocaleString()}</span></p>
+                            <p>ยอดที่มี: <span className="font-semibold text-gray-900">฿{insufficientModal.balance.toLocaleString()}</span></p>
+                        </div>
+                        <div className="mt-5 flex justify-end">
+                            <button
+                                onClick={() => setInsufficientModal({ ...insufficientModal, show: false })}
+                                className="bg-brown-600 text-white px-5 py-2 rounded-lg hover:bg-brown-700 transition-colors"
+                            >
+                                ตกลง
                             </button>
                         </div>
                     </div>

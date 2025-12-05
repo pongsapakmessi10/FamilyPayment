@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { NotificationProvider } from "@/context/NotificationContext";
 
 const kanit = Kanit({
   subsets: ["latin"],
@@ -80,7 +81,9 @@ export default function RootLayout({
       <body className={`${kanit.className} bg-gradient-to-br from-blue-50 via-white to-blue-100 text-gray-900`}>
         <LanguageProvider>
           <AuthProvider>
-            <LayoutContent>{children}</LayoutContent>
+            <NotificationProvider>
+              <LayoutContent>{children}</LayoutContent>
+            </NotificationProvider>
           </AuthProvider>
         </LanguageProvider>
       </body>

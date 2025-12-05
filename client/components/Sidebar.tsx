@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/context/NotificationContext';
 import { Home, CreditCard, Users, PiggyBank, Settings, LogOut, UserCircle, ShoppingCart, MessageSquare, Calendar as CalendarIcon, Plane } from 'lucide-react';
 import clsx from 'clsx';
 import { useLanguage } from '@/context/LanguageContext';
@@ -15,6 +16,7 @@ export default function Sidebar() {
     const { t } = useLanguage();
     const { user, logout } = useAuth();
     const [unreadCount, setUnreadCount] = useState(0);
+    const { unread } = useNotifications();
 
     // Load unread count
     useEffect(() => {
@@ -69,7 +71,7 @@ export default function Sidebar() {
         { name: 'สมาชิกทั้งหมด', href: '/members', icon: UserCircle },
         { name: 'แชท', href: '/chat', icon: MessageSquare, badge: unreadCount },
         { name: 'บิล', href: '/bills', icon: CalendarIcon },
-        { name: t('common.expenses'), href: '/expenses', icon: CreditCard },
+        { name: t('common.expenses'), href: '/expenses', icon: CreditCard, badge: unread.expenses },
         { name: 'Trip Wallet', href: '/events', icon: Plane },
         { name: 'ยืมเงิน', href: '/debts', icon: Users },
         { name: t('common.dreams'), href: '/dreams', icon: PiggyBank },

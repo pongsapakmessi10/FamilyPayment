@@ -30,13 +30,12 @@ export default function RegisterPage() {
             const res = await api.post(endpoint, formData);
             console.log('Registration response:', res.data);
 
-            if (res.data.email) {
-                // Redirect to OTP verification page
-                const otpUrl = `/verify-otp?email=${encodeURIComponent(res.data.email)}`;
-                console.log('Redirecting to:', otpUrl);
-                router.push(otpUrl);
+            if (res.data.token && res.data.user) {
+                // Log the user in directly (no OTP flow)
+                login(res.data.token, res.data.user);
+                router.push('/dashboard');
             } else {
-                setError('ไม่สามารถส่ง OTP ได้ กรุณาลองใหม่อีกครั้ง');
+                setError('ไม่สามารถสร้างบัญชีได้ กรุณาลองใหม่อีกครั้ง');
             }
         } catch (err: any) {
             console.error('Registration error:', err);

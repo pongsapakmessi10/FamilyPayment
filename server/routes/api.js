@@ -518,6 +518,9 @@ router.post('/transactions', auth, async (req, res) => {
             }
         }
 
+        // Populate payer and borrower info
+        await newTransaction.populate(['payer', 'borrower']);
+
         // Emit socket event to family room
         const io = req.app.get('io');
         io.to(req.user.familyId).emit('new-transaction', newTransaction);

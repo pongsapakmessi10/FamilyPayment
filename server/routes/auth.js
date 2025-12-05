@@ -5,8 +5,7 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Family = require('../models/Family');
-const PendingUser = require('../models/PendingUser');
-const { generateOTP, sendOTPEmail } = require('../utils/emailService');
+// PendingUser / emailService removed (no OTP flow)
 
 // Generate Invite Code
 const generateInviteCode = () => {
@@ -19,46 +18,46 @@ router.post('/register-owner', async (req, res) => {
         const { username, email, password, familyName } = req.body;
         const trimmedEmail = email.trim();
 
-        // Check if user exists in User or PendingUser
-        let user = await User.findOne({ email: trimmedEmail });
-        if (user) return res.status(400).json({ message: 'User already exists' });
-
-        let pendingUser = await PendingUser.findOne({ email: trimmedEmail });
-        if (pendingUser) {
-            // If pending user exists, we could update it or return error. 
-            // For simplicity, let's delete old pending and create new one, or just return error.
-            // Let's return error to avoid confusion, or maybe they want to resend OTP?
-            // Better to delete old pending and start over if they are registering again.
-            await PendingUser.deleteOne({ email: trimmedEmail });
-        }
+        // Check if user exists
+        let existingUser = await User.findOne({ email: trimmedEmail });
+        if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
         // Hash Password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Generate OTP
-        const otp = generateOTP();
-        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        // Create Family
+        const inviteCode = generateInviteCode();
+        const family = new Family({
+            name: familyName,
+            inviteCode,
+            ownerId: new mongoose.Types.ObjectId(), // temp, will set after user creation
+        });
+        await family.save();
 
-        // Create Pending User
-        pendingUser = new PendingUser({
+        // Create User
+        const user = new User({
             name: username,
             email: trimmedEmail,
             password: hashedPassword,
             role: 'moderator',
-            familyData: { familyName },
-            verificationOTP: otp,
-            otpExpiry
+            familyId: family._id,
+            emailVerified: true
         });
-        await pendingUser.save();
+        await user.save();
 
-        // Send OTP email
-        await sendOTPEmail(pendingUser.email, pendingUser.name, otp);
+        // Update family owner/member list
+        family.ownerId = user._id;
+        family.members.push(user._id);
+        await family.save();
 
-        res.json({
-            message: 'OTP ถูกส่งไปยังอีเมลของคุณแล้ว',
-            email: pendingUser.email
-        });
+        const token = jwt.sign(
+            { userId: user._id, role: user.role, familyId: user.familyId },
+            process.env.JWT_SECRET,
+            { expiresIn: '365d' }
+        );
+
+        res.json({ token, user: { id: user._id, name: user.name, role: user.role, familyId: user.familyId } });
 
     } catch (err) {
         console.error(err);
@@ -73,14 +72,8 @@ router.post('/register-member', async (req, res) => {
         const trimmedEmail = email.trim();
 
         // Check if user exists
-        let user = await User.findOne({ email: trimmedEmail });
-        if (user) return res.status(400).json({ message: 'User already exists' });
-
-        // Check pending user
-        let pendingUser = await PendingUser.findOne({ email: trimmedEmail });
-        if (pendingUser) {
-            await PendingUser.deleteOne({ email: trimmedEmail });
-        }
+        let existingUser = await User.findOne({ email: trimmedEmail });
+        if (existingUser) return res.status(400).json({ message: 'User already exists' });
 
         // Verify Invite Code
         const family = await Family.findOne({ inviteCode });
@@ -90,29 +83,27 @@ router.post('/register-member', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Generate OTP
-        const otp = generateOTP();
-        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-        // Create Pending User
-        pendingUser = new PendingUser({
+        // Create User
+        const user = new User({
             name: username,
             email: trimmedEmail,
             password: hashedPassword,
             role: 'member',
-            familyData: { familyId: family._id },
-            verificationOTP: otp,
-            otpExpiry
+            familyId: family._id,
+            emailVerified: true
         });
-        await pendingUser.save();
+        await user.save();
 
-        // Send OTP email
-        await sendOTPEmail(pendingUser.email, pendingUser.name, otp);
+        family.members.push(user._id);
+        await family.save();
 
-        res.json({
-            message: 'OTP ถูกส่งไปยังอีเมลของคุณแล้ว',
-            email: pendingUser.email
-        });
+        const token = jwt.sign(
+            { userId: user._id, role: user.role, familyId: user.familyId },
+            process.env.JWT_SECRET,
+            { expiresIn: '365d' }
+        );
+
+        res.json({ token, user: { id: user._id, name: user.name, role: user.role, familyId: user.familyId } });
 
     } catch (err) {
         console.error(err);
@@ -160,132 +151,6 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// Verify OTP and Create Real User
-router.post('/verify-otp', async (req, res) => {
-    try {
-        const { email, otp } = req.body;
-        const trimmedEmail = email.trim();
-
-        // Find Pending User
-        const pendingUser = await PendingUser.findOne({ email: trimmedEmail });
-        if (!pendingUser) {
-            // Check if already a real user
-            const user = await User.findOne({ email: trimmedEmail });
-            if (user) return res.status(400).json({ message: 'Email already verified' });
-            return res.status(400).json({ message: 'User not found or OTP expired' });
-        }
-
-        // Check OTP
-        if (pendingUser.verificationOTP !== otp) {
-            return res.status(400).json({ message: 'รหัส OTP ไม่ถูกต้อง' });
-        }
-
-        // Check expiry
-        if (new Date() > pendingUser.otpExpiry) {
-            return res.status(400).json({ message: 'รหัส OTP หมดอายุแล้ว กรุณาขอรหัสใหม่' });
-        }
-
-        // Create Real User and Family (if owner)
-        let user, family;
-
-        if (pendingUser.role === 'moderator') {
-            // Create Family
-            const inviteCode = generateInviteCode();
-            family = new Family({
-                name: pendingUser.familyData.familyName,
-                inviteCode,
-                ownerId: new mongoose.Types.ObjectId(), // Temp
-            });
-            await family.save();
-
-            // Create User
-            user = new User({
-                name: pendingUser.name,
-                email: pendingUser.email,
-                password: pendingUser.password,
-                role: 'moderator',
-                familyId: family._id,
-                emailVerified: true
-            });
-            await user.save();
-
-            // Update Family
-            family.ownerId = user._id;
-            family.members.push(user._id);
-            await family.save();
-
-        } else {
-            // Member joining existing family
-            family = await Family.findById(pendingUser.familyData.familyId);
-            if (!family) return res.status(400).json({ message: 'Family not found' });
-
-            user = new User({
-                name: pendingUser.name,
-                email: pendingUser.email,
-                password: pendingUser.password,
-                role: 'member',
-                familyId: family._id,
-                emailVerified: true
-            });
-            await user.save();
-
-            family.members.push(user._id);
-            await family.save();
-        }
-
-        // Delete Pending User
-        await PendingUser.deleteOne({ _id: pendingUser._id });
-
-        // Create Token
-        const token = jwt.sign(
-            { userId: user._id, role: user.role, familyId: user.familyId },
-            process.env.JWT_SECRET,
-            { expiresIn: '365d' }
-        );
-
-        res.json({
-            token,
-            user: { id: user._id, name: user.name, role: user.role, familyId: user.familyId },
-            message: 'ยืนยันอีเมลสำเร็จ'
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// Resend OTP
-router.post('/resend-otp', async (req, res) => {
-    try {
-        const { email } = req.body;
-        const trimmedEmail = email.trim();
-
-        // Find Pending User
-        const pendingUser = await PendingUser.findOne({ email: trimmedEmail });
-        if (!pendingUser) {
-            const user = await User.findOne({ email: trimmedEmail });
-            if (user) return res.status(400).json({ message: 'Email already verified' });
-            return res.status(400).json({ message: 'User not found' });
-        }
-
-        // Generate new OTP
-        const otp = generateOTP();
-        const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-        pendingUser.verificationOTP = otp;
-        pendingUser.otpExpiry = otpExpiry;
-        await pendingUser.save();
-
-        // Send OTP email
-        await sendOTPEmail(pendingUser.email, pendingUser.name, otp);
-
-        res.json({ message: 'ส่งรหัส OTP ใหม่แล้ว' });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
+// OTP routes removed (registration now completes without email verification)
 
 module.exports = router;

@@ -68,11 +68,7 @@ router.post('/bills', auth, async (req, res) => {
         await bill.save();
         await bill.populate('createdBy linkedDebtId', 'name email');
 
-        // Send email notification
-        const { sendBillCreatedEmail } = require('../utils/emailService');
-        if (bill.createdBy && bill.createdBy.email) {
-            await sendBillCreatedEmail(bill.createdBy.email, bill.createdBy.name, bill);
-        }
+        // Email notifications disabled
 
         // Emit Socket.io event
         const io = req.app.get('io');

@@ -58,7 +58,7 @@ export default function AllMembersPage() {
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4 md:gap-6 max-w-6xl mx-auto">
                 {members.map((member) => (
                     <div
                         key={member._id}
