@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Plus, CheckCircle } from 'lucide-react';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import BillsSkeleton from '@/components/BillsSkeleton';
 
 const localizer = momentLocalizer(moment);
 
@@ -209,7 +210,7 @@ export default function BillsPage() {
     };
 
     if (loading || loadingData) {
-        return <div className="p-4 md:p-8 text-center text-brown-600">กำลังโหลด...</div>;
+        return <BillsSkeleton />;
     }
 
     return (

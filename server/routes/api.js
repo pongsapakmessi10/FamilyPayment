@@ -486,10 +486,23 @@ router.get('/dashboard', auth, async (req, res) => {
 // Get all transactions
 router.get('/transactions', auth, async (req, res) => {
     try {
-        const transactions = await Transaction.find({ familyId: req.user.familyId })
+        const { type, limit } = req.query;
+        const query = { familyId: req.user.familyId };
+
+        if (type) {
+            query.type = type;
+        }
+
+        let queryBuilder = Transaction.find(query)
             .populate('payer')
             .populate('borrower')
             .sort({ date: -1 });
+
+        if (limit) {
+            queryBuilder = queryBuilder.limit(Number(limit));
+        }
+
+        const transactions = await queryBuilder;
         res.json(transactions);
     } catch (err) {
         res.status(500).json({ message: err.message });

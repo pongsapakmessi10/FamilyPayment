@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '@/lib/api';
 import { socket } from '@/lib/socket';
 import TransactionList from '@/components/TransactionList';
+import TransactionListSkeleton from '@/components/TransactionListSkeleton';
 import { Plus } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -30,8 +31,8 @@ export default function ExpensesPage() {
 
     const fetchTransactions = useCallback(async () => {
         try {
-            const res = await api.get('/transactions');
-            setTransactions(res.data.filter((t: any) => t.type === 'expense'));
+            const res = await api.get('/transactions?type=expense&limit=100');
+            setTransactions(res.data);
         } catch (err) {
             console.error(err);
         } finally {
@@ -176,7 +177,7 @@ export default function ExpensesPage() {
             )}
 
             {authLoading || loadingData ? (
-                <div>{t('expenses.loading')}</div>
+                <TransactionListSkeleton />
             ) : (
                 <TransactionList transactions={transactions} />
             )}

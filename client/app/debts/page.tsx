@@ -6,6 +6,7 @@ import { Plus, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import DebtsSkeleton from '@/components/DebtsSkeleton';
 
 export default function DebtsPage() {
     const [debts, setDebts] = useState<any[]>([]);
@@ -251,7 +252,7 @@ export default function DebtsPage() {
         return badges[status] || null;
     };
 
-    if (authLoading || loadingData) return <div className="p-8 text-center text-gray-600">กำลังโหลด...</div>;
+    if (authLoading || loadingData) return <DebtsSkeleton />;
 
     return (
         <div className="space-y-8">
@@ -653,7 +654,7 @@ export default function DebtsPage() {
                                 }}
                                 className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
                             >
-                                ยกเลิก
+                                ยืนยันการยกเลิก
                             </button>
                         </div>
                     </div>

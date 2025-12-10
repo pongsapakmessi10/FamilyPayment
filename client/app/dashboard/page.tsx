@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import SummaryCard from '@/components/SummaryCard';
+import DashboardSkeleton from '@/components/DashboardSkeleton';
 import MonthlyBarChart from '@/components/MonthlyBarChart';
 import TransactionModal from '@/components/TransactionModal';
 import ExportControls from '@/components/ExportControls';
@@ -107,7 +108,7 @@ export default function Dashboard() {
         }
     };
 
-    if (authLoading || loadingData) return <div className="p-4 md:p-8 text-center text-brown-600">{t('common.loading')}</div>;
+    if (authLoading || loadingData) return <DashboardSkeleton />;
 
     return (
         <div className="space-y-6 md:space-y-8 pb-20 md:pb-0">

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import api from '@/lib/api';
 import { Users, Mail, Shield, User } from 'lucide-react';
+import MembersSkeleton from '@/components/MembersSkeleton';
 
 interface Member {
     _id: string;
@@ -44,7 +45,7 @@ export default function AllMembersPage() {
     };
 
     if (authLoading || loading) {
-        return <div className="p-8 text-center text-blue-600">{t('common.loading')}</div>;
+        return <MembersSkeleton />;
     }
 
     return (
@@ -78,11 +79,10 @@ export default function AllMembersPage() {
                                 </div>
                             </div>
                             <span
-                                className={`px-3 py-1 rounded-full text-[11px] md:text-xs font-semibold flex items-center gap-1 ${
-                                    member.role === 'moderator'
+                                className={`px-3 py-1 rounded-full text-[11px] md:text-xs font-semibold flex items-center gap-1 ${member.role === 'moderator'
                                         ? 'bg-blue-200 text-blue-800'
                                         : 'bg-brown-100 text-blue-700'
-                                }`}
+                                    }`}
                             >
                                 {member.role === 'moderator' ? (
                                     <>

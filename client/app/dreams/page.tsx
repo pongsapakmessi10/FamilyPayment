@@ -116,19 +116,16 @@ export default function DreamsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {goals.map((goal: any) => (
-                    <div key={goal._id} className="relative group">
+                    <div
+                        key={goal._id}
+                        className="relative group cursor-pointer hover:scale-[1.02] transition-transform"
+                        onClick={() => addFunds(goal._id)}
+                    >
                         <DreamJar
                             title={goal.title}
                             target={goal.targetAmount}
                             current={goal.currentAmount}
                         />
-                        <button
-                            onClick={() => addFunds(goal._id)}
-                            className="absolute top-6 right-6 bg-brown-100 text-brown-600 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            title={t('dreams.addFunds')}
-                        >
-                            <Plus className="w-4 h-4" />
-                        </button>
                     </div>
                 ))}
             </div>

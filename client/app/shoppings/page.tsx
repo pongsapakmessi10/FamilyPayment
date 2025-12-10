@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import api from '@/lib/api';
 import { Plus, Trash2, Check, Search, Filter, ArrowUpDown, ShoppingCart, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import ShoppingsSkeleton from '@/components/ShoppingsSkeleton';
 
 interface ShoppingItem {
     _id: string;
@@ -168,7 +169,7 @@ export default function ShoppingPage() {
     const totalPrice = filteredItems.reduce((sum, item) => sum + (item.completed ? 0 : item.price), 0);
     const grandTotal = filteredItems.reduce((sum, item) => sum + item.price, 0);
 
-    if (loading) return <div className="p-8 text-center text-brown-600">กำลังโหลด...</div>;
+    if (loading) return <ShoppingsSkeleton />;
 
     return (
         <div className="space-y-6 pb-24 md:pb-0">
