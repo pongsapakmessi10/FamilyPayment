@@ -112,28 +112,29 @@ router.post('/register-member', async (req, res) => {
 });
 
 // Login
+// Login
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         const trimmedEmail = email.trim();
 
-        // Check User
-        const user = await User.findOne({ email: trimmedEmail });
+        // Check User (by Email OR Username)
+        console.log(`[Login Attempt] Input: "${trimmedEmail}"`);
+        const user = await User.findOne({
+            $or: [{ email: trimmedEmail }, { name: trimmedEmail }]
+        });
+
         if (!user) {
-            // Check if they are in PendingUser (unverified)
-            const pendingUser = await PendingUser.findOne({ email: trimmedEmail });
-            if (pendingUser) {
-                return res.status(400).json({
-                    message: 'Email not verified',
-                    email: pendingUser.email,
-                    requiresVerification: true
-                });
-            }
+            console.log('[Login Failed] User not found');
             return res.status(400).json({ message: 'Invalid credentials' });
         }
+        console.log(`[Login Info] Found User: ${user.name} (${user.email}), ID: ${user._id}`);
+        console.log(`[Login Info] Stored Hash: ${user.password.substring(0, 10)}...`);
 
         // Check Password
         const isMatch = await bcrypt.compare(password, user.password);
+        console.log(`[Login Info] Password Match: ${isMatch}`);
+
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
         // Create Token
@@ -146,7 +147,7 @@ router.post('/login', async (req, res) => {
         res.json({ token, user: { id: user._id, name: user.name, role: user.role, familyId: user.familyId } });
 
     } catch (err) {
-        console.error(err);
+        console.error('[Login Error]', err);
         res.status(500).json({ message: 'Server error' });
     }
 });

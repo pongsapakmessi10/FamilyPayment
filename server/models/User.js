@@ -9,6 +9,7 @@ const UserSchema = new mongoose.Schema({
   balance: { type: Number, default: 0 }, // Individual member balance
   avatar: { type: String },
   emailVerified: { type: Boolean, default: false },
+  pushToken: { type: String }, // Expo Push Token
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

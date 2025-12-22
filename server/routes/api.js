@@ -35,6 +35,20 @@ router.get('/users/:userId', auth, async (req, res) => {
     }
 });
 
+// Register Push Token
+router.post('/user/push-token', auth, async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ message: 'Token is required' });
+
+        await User.findByIdAndUpdate(req.user.userId, { pushToken: token });
+        res.json({ message: 'Push token updated' });
+    } catch (err) {
+        console.error('Error updating push token:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // Get member balances
 router.get('/balances', auth, async (req, res) => {
     try {

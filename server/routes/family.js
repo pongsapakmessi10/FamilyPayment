@@ -90,7 +90,8 @@ router.get('/info', auth, async (req, res) => {
         const response = {
             name: family.name,
             memberCount: family.members.length,
-            members: family.members
+            members: family.members,
+            inviteCode: family.inviteCode
         };
 
         res.json(response);

@@ -46,6 +46,8 @@ app.use('/api', apiRoutes);
 
 // Socket.io
 const Message = require('./models/Message');
+const User = require('./models/User');
+const { sendPushNotification } = require('./lib/push');
 
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
@@ -66,6 +68,12 @@ io.on('connection', (socket) => {
         const conversationId = [userId1.toString(), userId2.toString()].sort().join('_');
         socket.join(`dm-${conversationId}`);
         console.log(`User ${socket.id} joined DM: ${conversationId}`);
+    });
+
+    // Join user-specific room for badge notifications
+    socket.on('join-user-room', (userId) => {
+        socket.join(`user-${userId}`);
+        console.log(`User ${socket.id} joined user room: user-${userId}`);
     });
 
     // Send group message
@@ -99,6 +107,25 @@ io.on('connection', (socket) => {
             });
 
             console.log(`Message sent in family ${familyId}: ${message}`);
+
+            // Send Push Notifications to other family members
+            const recipients = await User.find({ familyId, _id: { $ne: senderId } });
+            recipients.forEach(recipient => {
+                // Notify badge counter
+                io.to(`user-${recipient._id}`).emit('dm-notification', {
+                    senderId,
+                    type: 'group',
+                    message: 'New group message'
+                });
+
+                // Send push notification
+                sendPushNotification(
+                    recipient._id,
+                    `${senderName} (Family Chat)`,
+                    message,
+                    { type: 'group', familyId }
+                );
+            });
         } catch (err) {
             console.error('Error sending message:', err);
             socket.emit('message-error', { message: 'Failed to send message' });
@@ -144,6 +171,22 @@ io.on('connection', (socket) => {
             });
 
             console.log(`DM sent from ${senderId} to ${recipientId}: ${message}`);
+
+            // Notify recipient's badge counter to update
+            io.to(`user-${recipientId}`).emit('dm-notification', {
+                senderId,
+                conversationId,
+                message: 'New unread message'
+            });
+
+            // Send Push Notification
+            const sender = await User.findById(senderId);
+            sendPushNotification(
+                recipientId,
+                sender ? sender.name : 'New Message',
+                message,
+                { type: 'dm', conversationId, senderId }
+            );
         } catch (err) {
             console.error('Error sending DM:', err);
             socket.emit('message-error', { message: 'Failed to send DM' });
@@ -194,6 +237,17 @@ io.on('connection', (socket) => {
                 });
 
                 console.log(`Messages marked as read in ${conversationId} by ${userId}`);
+
+                // Notify sender to update their badge (their sent messages are now read)
+                const sendersToNotify = [...new Set(updatedMessages.map(m => m.sender.toString()))];
+                sendersToNotify.forEach(senderId => {
+                    if (senderId !== userId.toString()) {
+                        io.to(`user-${senderId}`).emit('messages-read', {
+                            conversationId,
+                            userId
+                        });
+                    }
+                });
             }
         } catch (err) {
             console.error('Error marking messages as read:', err);

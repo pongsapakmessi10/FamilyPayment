@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "463064091594",
+    "project_id": "familypayment-7889c",
+    "storage_bucket": "familypayment-7889c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:463064091594:android:5eb999a79ffed67bfb1d33",
+        "android_client_info": {
+          "package_name": "com.familypayment.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbq00OiiSAnrkBbgP6rnWsZBcKdgM5v7I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
