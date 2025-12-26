@@ -526,13 +526,70 @@ router.get('/transactions', auth, async (req, res) => {
 // Add a transaction
 router.post('/transactions', auth, async (req, res) => {
     try {
+
+
+        // Check for Split Bill (Immediate Deduction Mode)
+        if (req.body.splitDetails && Array.isArray(req.body.splitDetails) && req.body.splitDetails.length > 0) {
+            const createdTransactions = [];
+            const io = req.app.get('io');
+
+
+
+            // For immediate split, we create a separate expense for EACH person
+            for (const split of req.body.splitDetails) {
+
+
+                // 1. Create Expense for this user
+                const splitTransaction = new Transaction({
+                    type: 'expense',
+                    familyId: req.user.familyId,
+                    payer: split.userId,
+                    amount: split.amount,
+                    description: `${req.body.description} (Split)`, // Add marker? or just same desc? User might prefer clean desc. Let's keep it clean or append (Split) if useful. Let's append (Split) for clarity.
+                    category: req.body.category,
+                    date: req.body.date || new Date(),
+                    status: 'verified'
+                });
+                await splitTransaction.save();
+
+                // Populate payer info for socket event
+                await splitTransaction.populate('payer');
+                createdTransactions.push(splitTransaction);
+
+                // 2. Deduct Balance Immediately
+                try {
+                    await User.findByIdAndUpdate(
+                        split.userId,
+                        { $inc: { balance: -split.amount } }
+                    );
+                } catch (err) {
+                    console.error(`Error updating balance for user ${split.userId}:`, err);
+                }
+
+                // Emit socket event for each split transaction
+                io.to(req.user.familyId).emit('new-transaction', splitTransaction);
+            }
+
+
+            // Return the first one or a summary? Client expects a single transaction object usually.
+            // But we created multiple. We can return the array or just success.
+            // Existing frontend expects `res.data` to be valid? AddExpenseScreen doesn't use the return value much, just navigation.goBack().
+
+            // However, we MUST prevent the "Default" logic above from running if it's a split.
+            // The default logic created a single transaction for 'payer'.
+            // We should wrap the default logic in an else/early return.
+            // Actually, I should Refactor the whole block.
+
+            return res.status(201).json({ message: 'Split expenses created', transactions: createdTransactions });
+        }
+
+        // --- Standard Single Payer Logic (Existing Code) ---
         const transaction = new Transaction({
             ...req.body,
             familyId: req.user.familyId
         });
         const newTransaction = await transaction.save();
 
-        // If this is an expense, decrement the payer's balance
         if (newTransaction.type === 'expense' && newTransaction.payer) {
             try {
                 const payerUser = await User.findById(newTransaction.payer);
@@ -540,8 +597,11 @@ router.post('/transactions', auth, async (req, res) => {
                     payerUser.balance = (payerUser.balance || 0) - newTransaction.amount;
                     await payerUser.save();
                 }
+
+                // The old split bill logic was here, but it's now replaced by the immediate deduction above.
+                // This block is now solely for single-payer expense balance deduction.
             } catch (balanceErr) {
-                console.error('Error updating payer balance:', balanceErr);
+                console.error('Error handling transaction side effects:', balanceErr);
             }
         }
 

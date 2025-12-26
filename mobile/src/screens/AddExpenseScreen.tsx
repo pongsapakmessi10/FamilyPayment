@@ -26,15 +26,25 @@ export default function AddExpenseScreen({ navigation }: any) {
     const [selectedPayer, setSelectedPayer] = useState<string>('');
     const [modalVisible, setModalVisible] = useState(false);
 
+    const [isSplit, setIsSplit] = useState(false);
+    const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+    const [splitDetails, setSplitDetails] = useState<any[]>([]);
+
     useEffect(() => {
         fetchUsers();
     }, []);
+
+    // Auto-select all members when enabling split
+    useEffect(() => {
+        if (isSplit && selectedMembers.length === 0 && users.length > 0) {
+            setSelectedMembers(users.map(u => u._id));
+        }
+    }, [isSplit, users]);
 
     const fetchUsers = async () => {
         try {
             const res = await api.get('/users');
             setUsers(res.data);
-            // Default to current user if found in list, otherwise first user
             if (res.data.length > 0) {
                 const currentUser = res.data.find((u: any) => u._id === user?.id || u.email === user?.email);
                 setSelectedPayer(currentUser ? currentUser._id : res.data[0]._id);
@@ -42,6 +52,14 @@ export default function AddExpenseScreen({ navigation }: any) {
         } catch (err) {
             console.error('Error fetching users:', err);
             Alert.alert('Error', 'Failed to load family members');
+        }
+    };
+
+    const toggleMemberSelection = (memberId: string) => {
+        if (selectedMembers.includes(memberId)) {
+            setSelectedMembers(selectedMembers.filter(id => id !== memberId));
+        } else {
+            setSelectedMembers([...selectedMembers, memberId]);
         }
     };
 
@@ -56,21 +74,38 @@ export default function AddExpenseScreen({ navigation }: any) {
             return;
         }
 
+        if (isSplit && selectedMembers.length === 0) {
+            Alert.alert('Error', 'Please select at least one person to split with');
+            return;
+        }
+
         setLoading(true);
         try {
+            const expenseAmount = parseFloat(amount);
+            let finalSplitDetails: { userId: string; amount: number }[] = [];
+
+            if (isSplit) {
+                const splitCount = selectedMembers.length;
+                const amountPerPerson = expenseAmount / splitCount;
+
+                finalSplitDetails = selectedMembers.map(memberId => ({
+                    userId: memberId,
+                    amount: amountPerPerson
+                }));
+            }
+
             const payload = {
                 type: 'expense',
-                amount: parseFloat(amount),
+                amount: expenseAmount,
                 description,
                 category,
                 payer: selectedPayer,
-                // date is handled by backend default or we can send it
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                splitDetails: isSplit ? finalSplitDetails : []
             };
 
             await api.post('/transactions', payload);
 
-            // Go back
             navigation.goBack();
         } catch (err: any) {
             console.error(err);
@@ -83,6 +118,13 @@ export default function AddExpenseScreen({ navigation }: any) {
     const getPayerName = () => {
         const payer = users.find(u => u._id === selectedPayer);
         return payer ? payer.name : 'Select Payer';
+    };
+
+    const getSplitText = () => {
+        if (!amount || selectedMembers.length === 0) return '฿0.00 / person';
+        const val = parseFloat(amount);
+        if (isNaN(val)) return '฿0.00 / person';
+        return `฿${(val / selectedMembers.length).toFixed(2)} / person`;
     };
 
     return (
@@ -154,13 +196,58 @@ export default function AddExpenseScreen({ navigation }: any) {
                     {/* Payer Dropdown */}
                     <View style={styles.inputGroup}>
                         <Text style={styles.label}>Who Paid?</Text>
-                        <TouchableOpacity style={styles.dropdownButton} onPress={() => setModalVisible(true)}>
+                        <TouchableOpacity
+                            style={[
+                                styles.dropdownButton,
+                                isSplit && styles.dropdownButtonDisabled
+                            ]}
+                            onPress={() => !isSplit && setModalVisible(true)}
+                            disabled={isSplit}
+                        >
                             <View style={styles.dropdownContent}>
-                                <UserIcon size={20} color={COLORS.textSecondary} style={{ marginRight: 10 }} />
-                                <Text style={styles.dropdownText}>{getPayerName()}</Text>
+                                <UserIcon size={20} color={isSplit ? COLORS.textSecondary : COLORS.textSecondary} style={{ marginRight: 10 }} />
+                                <Text style={styles.dropdownText}>{isSplit ? 'Everyone (Split)' : getPayerName()}</Text>
                             </View>
-                            <ChevronDown size={20} color={COLORS.textSecondary} />
+                            {!isSplit && <ChevronDown size={20} color={COLORS.textSecondary} />}
                         </TouchableOpacity>
+                    </View>
+
+                    {/* Split Bill Toggle */}
+                    <View style={styles.splitSection}>
+                        <View style={styles.splitHeader}>
+                            <Text style={styles.label}>Split Bill</Text>
+                            <TouchableOpacity
+                                style={[styles.switch, isSplit && styles.switchActive]}
+                                onPress={() => setIsSplit(!isSplit)}
+                            >
+                                <View style={[styles.switchKnob, isSplit && styles.switchKnobActive]} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {isSplit && (
+                            <View style={styles.splitMembersContainer}>
+                                <Text style={styles.splitSummaryText}>
+                                    Split equally: <Text style={{ fontWeight: 'bold', color: COLORS.primary }}>{getSplitText()}</Text>
+                                </Text>
+                                {users.map((member) => (
+                                    <TouchableOpacity
+                                        key={member._id}
+                                        style={styles.memberRow}
+                                        onPress={() => toggleMemberSelection(member._id)}
+                                    >
+                                        <View style={styles.memberInfo}>
+                                            <View style={[styles.avatarSmall, { backgroundColor: COLORS.surfaceVariant }]}>
+                                                <Text style={styles.avatarTextSmall}>{member.name ? member.name[0] : '?'}</Text>
+                                            </View>
+                                            <Text style={styles.memberName}>{member.name}</Text>
+                                        </View>
+                                        <View style={[styles.checkbox, selectedMembers.includes(member._id) && styles.checkboxSelected]}>
+                                            {selectedMembers.includes(member._id) && <Check size={16} color="white" />}
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
                     </View>
 
                     <TouchableOpacity
@@ -299,7 +386,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     categoryTextSelected: {
-        color: COLORS.white,
+        color: 'white',
     },
     dropdownButton: {
         flexDirection: 'row',
@@ -310,6 +397,11 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         borderWidth: 1,
         borderColor: COLORS.border,
+    },
+    dropdownButtonDisabled: {
+        backgroundColor: '#e0e0e0', // Gray shade
+        borderColor: '#ccc',
+        opacity: 0.6,
     },
     dropdownContent: {
         flexDirection: 'row',
@@ -396,8 +488,91 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     submitButtonText: {
-        color: COLORS.white,
+        color: 'white',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    splitSection: {
+        marginTop: 20,
+        marginBottom: 20,
+        backgroundColor: COLORS.surfaceVariant,
+        borderRadius: 16,
+        padding: 16,
+    },
+    splitHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    switch: {
+        width: 50,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: '#ccc',
+        justifyContent: 'center',
+        padding: 2,
+    },
+    switchActive: {
+        backgroundColor: COLORS.primary,
+    },
+    switchKnob: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: 'white',
+    },
+    switchKnobActive: {
+        alignSelf: 'flex-end',
+    },
+    splitMembersContainer: {
+        marginTop: 10,
+    },
+    splitSummaryText: {
+        fontSize: 14,
+        color: COLORS.textSecondary,
+        marginBottom: 10,
+    },
+    memberRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+    },
+    memberInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    avatarSmall: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+    },
+    avatarTextSmall: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: COLORS.primary,
+    },
+    memberName: {
+        fontSize: 16,
+        color: COLORS.text,
+    },
+    checkbox: {
+        width: 24,
+        height: 24,
+        borderRadius: 6,
+        borderWidth: 2,
+        borderColor: COLORS.textSecondary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxSelected: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
     },
 });

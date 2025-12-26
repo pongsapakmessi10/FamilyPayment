@@ -7,6 +7,7 @@ import { API_URL } from '../lib/constants';
 interface User {
     id: string;
     name: string;
+    email: string;
     role: 'moderator' | 'member';
     familyId: string;
 }
