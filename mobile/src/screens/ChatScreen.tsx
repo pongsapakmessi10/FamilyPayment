@@ -4,7 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { socket } from '../lib/socket';
-import { Send, Menu, X, Users, MessageCircle, ArrowLeft } from 'lucide-react-native';
+import { Send, Menu, X, Users, MessageCircle, ArrowLeft, Image as ImageIcon, Trash2 } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { API_URL } from '../lib/constants';
+import { Image } from 'react-native';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.75;
@@ -18,6 +21,7 @@ interface Message {
     timestamp?: string; // Web uses 'timestamp'
     messageType?: 'group' | 'dm';
     conversationId?: string;
+    images?: string[];
 }
 
 interface FamilyMember {
@@ -53,6 +57,7 @@ export default function ChatScreen({ route }: any) {
     const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [inputText, setInputText] = useState('');
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
     // UI State
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -202,30 +207,78 @@ export default function ChatScreen({ route }: any) {
         }
     };
 
+    const pickImage = async () => {
+        // Request permissions if needed (Expo usually handles this automatically on access)
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsMultipleSelection: true,
+            selectionLimit: 5 - selectedImages.length, // Limit total to 5
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            const newImages = result.assets.map(asset => asset.uri);
+            setSelectedImages(prev => [...prev, ...newImages].slice(0, 5));
+        }
+    };
+
+    const removeImage = (index: number) => {
+        setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    };
+
     const sendMessage = async () => {
-        if (!inputText.trim() || !user) return;
+        if ((!inputText.trim() && selectedImages.length === 0) || !user) return;
+
+        let uploadedImagePaths: string[] = [];
+
+        // Upload images if any
+        if (selectedImages.length > 0) {
+            try {
+                const formData = new FormData();
+                selectedImages.forEach((uri, index) => {
+                    const filename = uri.split('/').pop() || `image_${index}.jpg`;
+                    const match = /\.(\w+)$/.exec(filename);
+                    const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+                    // @ts-ignore - React Native FormData expects specific object structure
+                    formData.append('images', { uri, name: filename, type });
+                });
+
+                const res = await api.post('/chat/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+                uploadedImagePaths = res.data.images;
+            } catch (err) {
+                console.error("Image upload failed:", err);
+                Alert.alert("Error", "Failed to upload images");
+                return;
+            }
+        }
+
         const text = inputText.trim();
         setInputText('');
+        setSelectedImages([]);
 
         try {
+            const payload = {
+                familyId: user.familyId,
+                senderId: user.id,
+                senderName: user.name,
+                message: text,
+                images: uploadedImagePaths
+            };
+
             if (chatMode === 'group') {
-                socket.emit('send-message', {
-                    familyId: user.familyId,
-                    senderId: user.id,
-                    senderName: user.name,
-                    message: text
-                });
+                socket.emit('send-message', payload);
             } else if (chatMode === 'dm' && selectedUser) {
                 socket.emit('send-dm', {
-                    familyId: user.familyId,
-                    senderId: user.id,
-                    recipientId: selectedUser._id,
-                    message: text
+                    ...payload,
+                    recipientId: selectedUser._id
                 });
             }
         } catch (err) {
             console.error(err);
-            setInputText(text);
+            setInputText(text); // Restore text on error (images lost though)
         }
     };
 
@@ -313,9 +366,23 @@ export default function ChatScreen({ route }: any) {
                 style={[styles.messageBubble, isMe ? styles.myMessage : styles.theirMessage]}
             >
                 {!isMe && chatMode === 'group' && <Text style={styles.senderName}>{item.sender.name}</Text>}
-                <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.theirMessageText]}>
-                    {item.text}
-                </Text>
+                {item.images && item.images.length > 0 && (
+                    <View style={styles.imageGrid}>
+                        {item.images.map((img, idx) => (
+                            <Image
+                                key={idx}
+                                source={{ uri: img.startsWith('http') ? img : `${API_URL}${img}` }}
+                                style={styles.messageImage}
+                                resizeMode="cover"
+                            />
+                        ))}
+                    </View>
+                )}
+                {item.text ? (
+                    <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.theirMessageText]}>
+                        {item.text}
+                    </Text>
+                ) : null}
                 <Text style={[styles.timeText, isMe ? styles.myTimeText : styles.theirTimeText]}>
                     {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                 </Text>
@@ -411,22 +478,44 @@ export default function ChatScreen({ route }: any) {
                     />
                 )}
 
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.input}
-                        value={inputText}
-                        onChangeText={setInputText}
-                        placeholder={chatMode === 'dm' ? `Message ${selectedUser?.name}...` : "Type a message..."}
-                        placeholderTextColor="gray"
-                        multiline
-                    />
-                    <TouchableOpacity
-                        style={[styles.sendBtn, !inputText.trim() && styles.sendBtnDisabled]}
-                        onPress={sendMessage}
-                        disabled={!inputText.trim()}
-                    >
-                        <Send size={20} color="white" />
-                    </TouchableOpacity>
+                <View style={styles.footer}>
+                    {selectedImages.length > 0 && (
+                        <FlatList
+                            horizontal
+                            data={selectedImages}
+                            keyExtractor={(_, i) => i.toString()}
+                            style={styles.previewList}
+                            showsHorizontalScrollIndicator={false}
+                            renderItem={({ item, index }) => (
+                                <View style={styles.previewItem}>
+                                    <Image source={{ uri: item }} style={styles.previewImage} />
+                                    <TouchableOpacity onPress={() => removeImage(index)} style={styles.removeBtn}>
+                                        <X size={12} color="white" />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                        />
+                    )}
+                    <View style={styles.inputContainer}>
+                        <TouchableOpacity onPress={pickImage} style={styles.attachBtn}>
+                            <ImageIcon size={24} color="#666" />
+                        </TouchableOpacity>
+                        <TextInput
+                            style={styles.input}
+                            value={inputText}
+                            onChangeText={setInputText}
+                            placeholder={chatMode === 'dm' ? `Message ${selectedUser?.name}...` : "Type a message..."}
+                            placeholderTextColor="gray"
+                            multiline
+                        />
+                        <TouchableOpacity
+                            style={[styles.sendBtn, (!inputText.trim() && selectedImages.length === 0) && styles.sendBtnDisabled]}
+                            onPress={sendMessage}
+                            disabled={!inputText.trim() && selectedImages.length === 0}
+                        >
+                            <Send size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -537,5 +626,13 @@ const styles = StyleSheet.create({
         fontWeight: 'bold'
     },
     sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#4f46e5', alignItems: 'center', justifyContent: 'center' },
-    sendBtnDisabled: { backgroundColor: '#ccc' }
+    sendBtnDisabled: { backgroundColor: '#ccc' },
+    footer: { backgroundColor: 'white', borderTopWidth: 1, borderColor: '#eee' },
+    attachBtn: { marginRight: 8, padding: 4 },
+    imageGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 4 },
+    messageImage: { width: 150, height: 150, borderRadius: 8, backgroundColor: '#eee' },
+    previewList: { padding: 8, borderBottomWidth: 1, borderColor: '#eee' },
+    previewItem: { marginRight: 8, position: 'relative' },
+    previewImage: { width: 60, height: 60, borderRadius: 8 },
+    removeBtn: { position: 'absolute', top: -6, right: -6, backgroundColor: 'red', borderRadius: 10, padding: 4, zIndex: 1 }
 });

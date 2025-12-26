@@ -31,6 +31,7 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 // Make io available in routes
 app.set('io', io);
@@ -87,6 +88,7 @@ io.on('connection', (socket) => {
                 sender: senderId,
                 messageType: 'group',
                 message,
+                images: data.images || [],
                 timestamp: new Date()
             });
 
@@ -102,6 +104,7 @@ io.on('connection', (socket) => {
                 sender: newMessage.sender,
                 messageType: newMessage.messageType,
                 message: newMessage.message,
+                images: newMessage.images,
                 timestamp: newMessage.timestamp,
                 readBy: newMessage.readBy
             });
@@ -148,6 +151,7 @@ io.on('connection', (socket) => {
                 messageType: 'dm',
                 conversationId,
                 message,
+                images: data.images || [],
                 timestamp: new Date()
             });
 
@@ -166,6 +170,7 @@ io.on('connection', (socket) => {
                 messageType: newMessage.messageType,
                 conversationId: newMessage.conversationId,
                 message: newMessage.message,
+                images: newMessage.images,
                 timestamp: newMessage.timestamp,
                 readBy: newMessage.readBy
             });

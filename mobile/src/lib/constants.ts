@@ -3,7 +3,7 @@
 
 // Local Development
 // For Android Emulator use 10.0.2.2
-// export const API_URL = 'http://10.0.2.2:3000';
+// export const API_URL = 'http://10.0.2.2:5000';
 
 // For Physical Device (Your Detected IP)
 export const API_URL = 'https://familypayment.onrender.com';

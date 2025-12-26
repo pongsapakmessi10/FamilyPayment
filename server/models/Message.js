@@ -35,10 +35,12 @@ const messageSchema = new mongoose.Schema({
     },
     message: {
         type: String,
-        required: true,
         trim: true,
         maxlength: 1000
     },
+    images: [{
+        type: String // URL or path to the image
+    }],
     timestamp: {
         type: Date,
         default: Date.now,

@@ -5,6 +5,39 @@ const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const Goal = require('../models/Goal');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Multer Config
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadPath = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage });
+
+// Upload Image Endpoint
+router.post('/chat/upload', auth, upload.array('images', 5), (req, res) => {
+    try {
+        const files = req.files;
+        if (!files || files.length === 0) {
+            return res.status(400).json({ message: 'No files uploaded' });
+        }
+        const filePaths = files.map(file => `/uploads/${file.filename}`);
+        res.json({ message: 'Images uploaded', images: filePaths });
+    } catch (err) {
+        console.error('Error uploading images:', err);
+        res.status(500).json({ message: 'Upload failed' });
+    }
+});
 
 // Get all users in the family
 router.get('/users', auth, async (req, res) => {

@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { socket } from '@/lib/socket';
 import api from '@/lib/api';
-import { Send, Users, User, MessageCircle, Loader2, ArrowLeft, Trash2, MoreVertical } from 'lucide-react';
+import { Send, Users, User, MessageCircle, Loader2, ArrowLeft, Trash2, MoreVertical, Image as ImageIcon, X } from 'lucide-react';
 
 interface Message {
     _id: string;
@@ -20,6 +20,7 @@ interface Message {
     };
     messageType: 'group' | 'dm';
     message: string;
+    images?: string[];
     timestamp: string;
     conversationId?: string;
     deletedForEveryone?: boolean;
@@ -71,6 +72,11 @@ export default function ChatPage() {
     const [loadingMessages, setLoadingMessages] = useState(true);
     const [deleteMenuOpen, setDeleteMenuOpen] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Image upload state
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -260,33 +266,86 @@ export default function ChatPage() {
         return [userId1, userId2].sort().join('_');
     };
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            const validFiles = files.filter(file => file.type.startsWith('image/'));
+
+            if (selectedFiles.length + validFiles.length > 5) {
+                alert('คุณสามารถส่งรูปภาพได้สูงสุด 5 รูป');
+                return;
+            }
+
+            setSelectedFiles(prev => [...prev, ...validFiles]);
+
+            // Create preview URLs
+            const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file));
+            setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
+        }
+        // Reset input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const removeFile = (index: number) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setPreviewUrls(prev => {
+            // Revoke URL to prevent memory leaks
+            URL.revokeObjectURL(prev[index]);
+            return prev.filter((_, i) => i !== index);
+        });
+    };
+
     const sendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!newMessage.trim() || !user) return;
+        if ((!newMessage.trim() && selectedFiles.length === 0) || !user) return;
 
         setSending(true);
 
-        try {
-            if (chatMode === 'group') {
-                // Send group message
-                socket.emit('send-message', {
-                    familyId: user.familyId,
-                    senderId: user.id,
-                    senderName: user.name,
-                    message: newMessage.trim()
+        // Upload images first
+        let uploadedImages: string[] = [];
+        if (selectedFiles.length > 0) {
+            try {
+                const formData = new FormData();
+                selectedFiles.forEach(file => {
+                    formData.append('images', file);
                 });
+
+                const res = await api.post('/chat/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                uploadedImages = res.data.images;
+            } catch (err) {
+                console.error('Error uploading images:', err);
+                alert('อัปโหลดรูปภาพไม่สำเร็จ');
+                setSending(false);
+                return;
+            }
+        }
+
+        try {
+            const payload = {
+                familyId: user.familyId,
+                senderId: user.id,
+                senderName: user.name,
+                message: newMessage.trim(),
+                images: uploadedImages
+            };
+
+            if (chatMode === 'group') {
+                socket.emit('send-message', payload);
             } else if (chatMode === 'dm' && selectedUser) {
-                // Send DM
                 socket.emit('send-dm', {
-                    familyId: user.familyId,
-                    senderId: user.id,
+                    ...payload,
                     recipientId: selectedUser._id,
-                    message: newMessage.trim()
                 });
             }
 
             setNewMessage('');
+            setSelectedFiles([]);
+            setPreviewUrls([]);
         } catch (err) {
             console.error('Error sending message:', err);
         } finally {
@@ -528,6 +587,20 @@ export default function ChatPage() {
                                                     ? 'bg-brown-600 text-white rounded-br-none'
                                                     : 'bg-white border border-brown-200 rounded-bl-none'
                                                 }`}>
+                                                {msg.images && msg.images.length > 0 && (
+                                                    <div className={`grid gap-1 mb-2 ${msg.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                                        {msg.images.map((img, idx) => (
+                                                            <div key={idx} className="relative aspect-square">
+                                                                <img
+                                                                    src={img.startsWith('http') ? img : `${api.defaults.baseURL}${img}`}
+                                                                    alt="Shared image"
+                                                                    className="w-full h-full object-cover rounded-lg"
+                                                                    onClick={() => window.open(img.startsWith('http') ? img : `${api.defaults.baseURL}${img}`, '_blank')}
+                                                                />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                                 <p className={`text-sm break-words ${msg.deletedForEveryone ? 'text-gray-500' : ''}`}>
                                                     {msg.deletedForEveryone ? '🚫 ข้อความถูกลบ' : msg.message}
                                                 </p>
@@ -592,20 +665,51 @@ export default function ChatPage() {
             {/* Input Container */}
             {showMessageList && (
                 <div className="bg-white border-t border-brown-200 p-4 shadow-lg">
-                    <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex gap-2">
+                    {previewUrls.length > 0 && (
+                        <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                            {previewUrls.map((url, index) => (
+                                <div key={index} className="relative">
+                                    <img src={url} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFile(index)}
+                                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 transition-colors"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex gap-2 items-end">
+                        <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-3 text-gray-500 hover:text-brown-600 hover:bg-brown-50 rounded-full transition-colors"
+                        >
+                            <ImageIcon className="w-6 h-6" />
+                        </button>
                         <input
                             type="text"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder="พิมพ์ข้อความ..."
-                            className="flex-1 px-4 py-3 border border-brown-300 rounded-full focus:outline-none focus:ring-2 focus:ring-brown-500 focus:border-transparent"
+                            className="flex-1 px-4 py-3 border border-brown-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brown-500 focus:border-transparent min-h-[48px]"
                             disabled={sending}
                             maxLength={1000}
                         />
                         <button
                             type="submit"
-                            disabled={!newMessage.trim() || sending}
-                            className="px-6 py-3 bg-brown-600 text-white rounded-full hover:bg-brown-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium"
+                            disabled={(!newMessage.trim() && selectedFiles.length === 0) || sending}
+                            className="px-6 py-3 bg-brown-600 text-white rounded-2xl hover:bg-brown-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-medium min-h-[48px]"
                         >
                             {sending ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
