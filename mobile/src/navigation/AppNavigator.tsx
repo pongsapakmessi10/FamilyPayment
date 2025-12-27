@@ -16,6 +16,7 @@ import EventsScreen from '../screens/EventsScreen';
 import ChatScreen from '../screens/ChatScreen';
 import MembersScreen from '../screens/MembersScreen';
 import AllExpensesScreen from '../screens/AllExpensesScreen';
+import AboutUs from '../screens/AboutUs';
 
 const Stack = createStackNavigator();
 
@@ -45,6 +46,7 @@ export default function AppNavigator() {
                     <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Members" component={MembersScreen} options={{ headerShown: true, title: 'Members' }} />
                     <Stack.Screen name="AllExpenses" component={AllExpensesScreen} options={{ headerShown: true, title: 'All Expenses' }} />
+                    <Stack.Screen name="AboutUs" component={AboutUs} options={{ headerShown: true, title: 'About Us' }} />
                 </>
             ) : (
                 <>

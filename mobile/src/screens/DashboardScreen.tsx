@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../lib/api';
 import { useFocusEffect } from '@react-navigation/native';
-import { CircleDollarSign, PiggyBank, Wallet, ShoppingBag, FileText, CreditCard, Target, MessageCircle, Users, Plus, Edit2, X, Backpack, Banknote } from 'lucide-react-native';
+import { CircleDollarSign, PiggyBank, Wallet, ShoppingBag, FileText, CreditCard, Target, MessageCircle, Users, Plus, Edit2, X, Backpack, Banknote, Info } from 'lucide-react-native';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { COLORS } from '../lib/theme';
 
@@ -256,6 +256,7 @@ export default function DashboardScreen({ navigation }: any) {
                             { id: 'Dreams', name: 'Dreams', icon: Target },
                             { id: 'Events', name: 'Trips', icon: Backpack },
                             { id: 'AllExpenses', name: 'All Expenses', icon: Banknote },
+                            { id: 'AboutUs', name: 'About Us', icon: Info }
                         ].map((feature) => (
                             <TouchableOpacity
                                 key={feature.id}
