@@ -65,14 +65,14 @@ export default function RegisterScreen({ navigation }: any) {
                 >
                     {/* Logo */}
                     <View style={styles.logoContainer}>
-                        <Image source={FamilyLogo} style={styles.logo} resizeMode="contain" />
+                       
                     </View>
 
                     {/* Card Container */}
                     <View style={styles.card}>
                         {/* Header */}
                         <View style={styles.header}>
-                            <Text style={styles.title}>Create Account</Text>
+                            <Text style={styles.title}>สร้างบัญชี</Text>
                             <Text style={styles.subtitle}>
                                 {isCreatingFamily ? 'Start your family journey' : 'Join an existing family'}
                             </Text>
@@ -212,12 +212,12 @@ export default function RegisterScreen({ navigation }: any) {
 
                         {/* Footer */}
                         <View style={styles.footer}>
-                            <Text style={styles.footerText}>Already have an account? </Text>
+                            <Text style={styles.footerText}>มีบัญชีแล้ว? </Text>
                             <TouchableOpacity
                                 onPress={() => navigation.navigate('Login')}
                                 activeOpacity={0.7}
                             >
-                                <Text style={styles.signInText}>Sign In</Text>
+                                <Text style={styles.signInText}>เข้าสู่ระบบ</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -234,9 +234,9 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingHorizontal: 24,
+        paddingHorizontal: 30,
         paddingVertical: 20,
-        paddingBottom: 150,
+        paddingBottom: 70,
     },
     logoContainer: {
         alignItems: 'center',

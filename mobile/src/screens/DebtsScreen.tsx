@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#eee' },
     title: { fontSize: 20, fontWeight: 'bold' },
-    addBtn: { backgroundColor: '#4f46e5', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+    addBtn: { backgroundColor: 'brown', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
     list: { padding: 16 },
     section: { marginBottom: 24 },
     sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#666', marginBottom: 12, marginLeft: 4 },
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     pendingText: { color: '#c2410c', fontWeight: '500' },
 
     progressBg: { height: 6, backgroundColor: '#f3f4f6', borderRadius: 3, overflow: 'hidden', marginBottom: 4 },
-    progressFill: { height: '100%', backgroundColor: '#4f46e5' },
+    progressFill: { height: '100%', backgroundColor: 'brown' },
     progressText: { fontSize: 12, color: '#666', textAlign: 'right' },
 
     // Modal
@@ -450,14 +450,14 @@ const styles = StyleSheet.create({
     form: { padding: 20 },
     label: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#444' },
     input: { backgroundColor: 'white', padding: 16, borderRadius: 12, marginBottom: 20, fontSize: 16 },
-    submitBtn: { backgroundColor: '#4f46e5', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 20 },
+    submitBtn: { backgroundColor: 'brown', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 20 },
     submitBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 
     lenderScroll: { flexDirection: 'row', marginBottom: 20 },
     lenderChip: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: 'white', borderRadius: 12, marginRight: 12, borderWidth: 1, borderColor: 'transparent', minWidth: 140 },
-    lenderChipSelected: { backgroundColor: '#4f46e5', borderColor: '#4f46e5' },
+    lenderChipSelected: { backgroundColor: 'brown', borderColor: 'brown' },
     avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e0e7ff', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-    avatarText: { fontSize: 16, fontWeight: 'bold', color: '#4f46e5' },
+    avatarText: { fontSize: 16, fontWeight: 'bold', color: 'brown' },
     lenderName: { fontWeight: '600', color: '#333' },
     lenderBalance: { fontSize: 12, color: '#666' },
     textWhite: { color: 'white' },

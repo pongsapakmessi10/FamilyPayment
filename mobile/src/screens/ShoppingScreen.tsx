@@ -39,7 +39,7 @@ export default function ShoppingScreen() {
         try {
             const res = await api.post('/shopping', {
                 name: newItem,
-                category: 'general' // simplified for mobile
+                category: 'general'
             });
             setNewItem('');
             fetchItems();
@@ -50,12 +50,11 @@ export default function ShoppingScreen() {
 
     const toggleComplete = async (id: string, currentStatus: boolean) => {
         try {
-            // Optimistic update
             setItems(items.map(i => i._id === id ? { ...i, completed: !currentStatus } : i));
             await api.put(`/shopping/${id}`, { completed: !currentStatus });
         } catch (err) {
             console.error(err);
-            fetchItems(); // Revert on error
+            fetchItems();
         }
     };
 
@@ -72,11 +71,11 @@ export default function ShoppingScreen() {
     const renderItem = ({ item }: { item: ShoppingItem }) => {
         if (!item) return null;
         return (
-            <View style={styles.itemRow}>
+            <View style={[styles.itemRow, item.completed && styles.itemRowCompleted]}>
                 <TouchableOpacity onPress={() => toggleComplete(item._id, item.completed)} style={styles.checkBtn}>
                     {item.completed ?
-                        <CheckSquare size={24} color="#10b981" /> :
-                        <Square size={24} color="#666" />
+                        <CheckSquare size={26} color="#10b981" strokeWidth={2.5} /> :
+                        <Square size={26} color="#94a3b8" strokeWidth={2} />
                     }
                 </TouchableOpacity>
 
@@ -86,7 +85,7 @@ export default function ShoppingScreen() {
                 </View>
 
                 <TouchableOpacity onPress={() => deleteItem(item._id)} style={styles.deleteBtn}>
-                    <Trash2 size={20} color="#ef4444" />
+                    <Trash2 size={22} color="#ef4444" strokeWidth={2} />
                 </TouchableOpacity>
             </View>
         );
@@ -95,31 +94,41 @@ export default function ShoppingScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.title}>Shopping List</Text>
+
+                <Text style={styles.subtitle}>{items.filter(i => !i.completed).length} items to buy</Text>
             </View>
 
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Add new item..."
-                    value={newItem}
-                    onChangeText={setNewItem}
-                    onSubmitEditing={handleAddItem}
-                />
-                <TouchableOpacity onPress={handleAddItem} style={styles.addBtn}>
-                    <Plus color="white" size={24} />
-                </TouchableOpacity>
+            <View style={styles.inputWrapper}>
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="What do you need?"
+                        placeholderTextColor="#94a3b8"
+                        value={newItem}
+                        onChangeText={setNewItem}
+                        onSubmitEditing={handleAddItem}
+                    />
+                    <TouchableOpacity onPress={handleAddItem} style={styles.addBtn}>
+                        <Plus color="white" size={22} strokeWidth={2.5} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {loading ? (
-                <ActivityIndicator style={styles.center} />
+                <ActivityIndicator style={styles.center} size="large" color="#6366f1" />
             ) : (
                 <FlatList
                     data={items}
                     renderItem={renderItem}
                     keyExtractor={item => item._id}
                     contentContainerStyle={styles.list}
-                    ListEmptyComponent={<Text style={styles.empty}>No items needed</Text>}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyIcon}>🛒</Text>
+                            <Text style={styles.empty}>ตะกร้าว่างเปล่า</Text>
+                            <Text style={styles.emptySubtext}>เพิ่มสิ่งที่ต้องการซื้อ</Text>
+                        </View>
+                    }
                 />
             )}
         </SafeAreaView>
@@ -127,20 +136,148 @@ export default function ShoppingScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f6f7f9' },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { padding: 20, backgroundColor: 'white', borderBottomWidth: 1, borderColor: '#eee' },
-    title: { fontSize: 20, fontWeight: 'bold' },
-    inputContainer: { flexDirection: 'row', padding: 16, gap: 12 },
-    input: { flex: 1, backgroundColor: 'white', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#ddd' },
-    addBtn: { backgroundColor: '#4f46e5', width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-    list: { padding: 16 },
-    itemRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 16, borderRadius: 12, marginBottom: 8 },
-    checkBtn: { marginRight: 12 },
-    itemInfo: { flex: 1 },
-    itemText: { fontSize: 16, color: '#333' },
-    completedText: { textDecorationLine: 'line-through', color: '#999' },
-    addedBy: { fontSize: 12, color: '#999', marginTop: 2 },
-    deleteBtn: { padding: 8 },
-    empty: { textAlign: 'center', marginTop: 40, color: '#999' }
+    container: { 
+        flex: 1, 
+        backgroundColor: '#f8fafc' 
+    },
+    center: { 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center' 
+    },
+    header: { 
+        padding: 24, 
+        paddingBottom: 20,
+        backgroundColor: 'white',
+        borderBottomWidth: 1, 
+        borderColor: '#f1f5f9',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2
+    },
+    title: { 
+        fontSize: 28, 
+        fontWeight: '700',
+        color: '#0f172a',
+        letterSpacing: -0.5
+    },
+    subtitle: {
+        fontSize: 14,
+        color: '#64748b',
+        marginTop: 4,
+        fontWeight: '500'
+    },
+    inputWrapper: {
+        backgroundColor: 'white',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9'
+    },
+    inputContainer: { 
+        flexDirection: 'row', 
+        alignItems: 'center',
+        gap: 12,
+        backgroundColor: '#f8fafc',
+        borderRadius: 16,
+        paddingRight: 6,
+        borderWidth: 2,
+        borderColor: '#e2e8f0'
+    },
+    input: { 
+        flex: 1, 
+        backgroundColor: 'transparent',
+        padding: 16,
+        fontSize: 16,
+        color: '#0f172a',
+        fontWeight: '500'
+    },
+    addBtn: { 
+        backgroundColor: 'brown',
+        width: 44, 
+        height: 44, 
+        borderRadius: 12, 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        shadowColor: '#6366f1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4
+    },
+    list: { 
+        padding: 20,
+        paddingTop: 16
+    },
+    itemRow: { 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        backgroundColor: 'white', 
+        padding: 18,
+        borderRadius: 16, 
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#f1f5f9'
+    },
+    itemRowCompleted: {
+        backgroundColor: '#f8fafc',
+        opacity: 0.7
+    },
+    checkBtn: { 
+        marginRight: 14,
+        padding: 4
+    },
+    itemInfo: { 
+        flex: 1 
+    },
+    itemText: { 
+        fontSize: 17, 
+        color: '#0f172a',
+        fontWeight: '600',
+        lineHeight: 24
+    },
+    completedText: { 
+        textDecorationLine: 'line-through', 
+        color: '#94a3b8',
+        fontWeight: '500'
+    },
+    addedBy: { 
+        fontSize: 13, 
+        color: '#94a3b8', 
+        marginTop: 4,
+        fontWeight: '500'
+    },
+    deleteBtn: { 
+        padding: 10,
+        marginLeft: 8
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        marginTop: 80,
+        paddingHorizontal: 40
+    },
+    emptyIcon: {
+        fontSize: 56,
+        marginBottom: 16
+    },
+    empty: { 
+        textAlign: 'center',
+        fontSize: 20,
+        color: '#475569',
+        fontWeight: '600',
+        marginBottom: 8
+    },
+    emptySubtext: {
+        textAlign: 'center',
+        fontSize: 15,
+        color: '#94a3b8',
+        fontWeight: '500'
+    }
 });

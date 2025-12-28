@@ -40,13 +40,13 @@ export default function LoginScreen({ navigation }: any) {
 
                 {/* 1. Image Center */}
                 <View style={styles.logoContainer}>
-                    <Image source={FamilyLogo} style={styles.logo} resizeMode="contain" />
+                    
                 </View>
 
                 {/* 2. Login Header */}
                 <View style={styles.header}>
-                    <Text style={styles.title}>Welcome Back</Text>
-                    <Text style={styles.subtitle}>Sign in to manage your family finance.</Text>
+                    <Text style={styles.title}>ยินดีต้อนรับกลับ</Text>
+                    <Text style={styles.subtitle}>เข้าสู่ระบบเพื่อจัดการรายจ่ายของครอบครัว</Text>
                 </View>
 
                 {/* 3. Username */}
@@ -107,9 +107,9 @@ export default function LoginScreen({ navigation }: any) {
 
                 {/* 7. Footer */}
                 <View style={styles.footer}>
-                    <Text style={styles.footerText}>New to Family Payment? </Text>
+                    <Text style={styles.footerText}>ยังไม่มีบัญชี? </Text>
                     <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                        <Text style={styles.signUpText}>Create Account</Text>
+                        <Text style={styles.signUpText}>สร้างบัญชี</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     },
     logoContainer: {
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: 52,
     },
     logo: {
         width: 180,
